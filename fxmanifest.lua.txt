@@ -1,0 +1,13 @@
+fx_version 'cerulean'
+game 'gta5'
+
+author 'YourName'
+description 'Standalone Garage System for QB-Core'
+version '2.0.0'
+
+shared_script '@qb-core/shared/locale.lua'
+client_script 'client.lua'
+server_script 'server.lua'
+file 'config.lua'
+
+lua54 'yes'
