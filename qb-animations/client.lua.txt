@@ -1,0 +1,80 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+
+local cigaretteProp = nil
+local smokeParticle = nil
+
+local function startScenario(scenario, label)
+    local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) and not IsEntityDead(ped) then
+        TaskStartScenarioInPlace(ped, scenario, 0, true)
+        QBCore.Functions.Notify("You're now " .. label .. ".", "primary")
+    else
+        QBCore.Functions.Notify("You can't do that in a vehicle or while dead.", "error")
+    end
+end
+
+-- Usable cigarette item
+RegisterNetEvent("scenario:useCigarette", function()
+    local ped = PlayerPedId()
+    local coords = GetEntityCoords(ped)
+
+    -- Start smoking animation
+    TaskStartScenarioInPlace(ped, "WORLD_HUMAN_SMOKING", 0, true)
+    QBCore.Functions.Notify("You're now smoking.", "primary")
+
+    -- Load and attach cigarette prop
+    RequestModel("prop_cigar_01")
+    while not HasModelLoaded("prop_cigar_01") do Wait(10) end
+    cigaretteProp = CreateObject(GetHashKey("prop_cigar_01"), coords.x, coords.y, coords.z + 0.2, true, true, true)
+    AttachEntityToEntity(cigaretteProp, ped, GetPedBoneIndex(ped, 58868), 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, true, true, false, true, 1, true)
+
+    -- Load and start smoke particle
+    RequestNamedPtfxAsset("core")
+    while not HasNamedPtfxAssetLoaded("core") do Wait(10) end
+    UseParticleFxAsset("core")
+    smokeParticle = StartParticleFxLoopedOnEntity("exp_cigarette_smoke", cigaretteProp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, false, false, false)
+end)
+
+-- /smoke command
+RegisterCommand("smoke", function()
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) or IsEntityDead(ped) then
+        QBCore.Functions.Notify("You can't smoke in a vehicle or while dead.", "error")
+        return
+    end
+
+    QBCore.Functions.TriggerCallback('QBCore:HasItem', function(hasItem)
+        if hasItem then
+            TriggerServerEvent("scenario:consumeCigarette")
+        else
+            QBCore.Functions.Notify("You need a cigarette to smoke.", "error")
+        end
+    end, "cigarette")
+end, false)
+
+-- Stop animation and clean up
+RegisterCommand("stopanim", function()
+    ClearPedTasks(PlayerPedId())
+    QBCore.Functions.Notify("Animation stopped.", "error")
+
+    if cigaretteProp then
+        DeleteObject(cigaretteProp)
+        cigaretteProp = nil
+    end
+    if smokeParticle then
+        StopParticleFxLooped(smokeParticle, false)
+        smokeParticle = nil
+    end
+end, false)
+
+-- Other scenario commands
+RegisterCommand("sit", function() startScenario("WORLD_HUMAN_PICNIC", "sitting") end, false)
+RegisterCommand("lean", function() startScenario("WORLD_HUMAN_LEANING", "leaning") end, false)
+RegisterCommand("drink", function() startScenario("WORLD_HUMAN_DRINKING", "drinking") end, false)
+RegisterCommand("bbq", function() startScenario("PROP_HUMAN_BBQ", "barbecuing") end, false)
+RegisterCommand("guard", function() startScenario("WORLD_HUMAN_GUARD_STAND", "standing guard") end, false)
+RegisterCommand("muscle", function() startScenario("WORLD_HUMAN_MUSCLE_FLEX", "flexing") end, false)
+RegisterCommand("film", function() startScenario("WORLD_HUMAN_MOBILE_FILM_SHOCKING", "filming") end, false)
+RegisterCommand("clean", function() startScenario("WORLD_HUMAN_MAID_CLEAN", "cleaning") end, false)
+RegisterCommand("hammer", function() startScenario("WORLD_HUMAN_HAMMERING", "hammering") end, false)
+RegisterCommand("binoculars", function() startScenario("WORLD_HUMAN_BINOCULARS", "using binoculars") end, false)

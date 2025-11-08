@@ -1,0 +1,22 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+
+-- Usable cigarette item
+QBCore.Functions.CreateUseableItem("cigarette", function(source, item)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if Player.Functions.RemoveItem("cigarette", 1) then
+        TriggerClientEvent("scenario:useCigarette", source)
+    else
+        TriggerClientEvent("QBCore:Notify", source, "You don’t have any cigarettes left.", "error")
+    end
+end)
+
+-- Support for /smoke command
+RegisterNetEvent("scenario:consumeCigarette", function()
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player and Player.Functions.RemoveItem("cigarette", 1) then
+        TriggerClientEvent("scenario:useCigarette", src)
+    else
+        TriggerClientEvent("QBCore:Notify", src, "You don’t have any cigarettes left.", "error")
+    end
+end)

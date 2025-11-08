@@ -1,0 +1,14 @@
+##Add into qb-cor items##
+
+    ['cigarette'] = {
+    name = 'cigarette',
+    label = 'Cigarette',
+    weight = 1,
+    type = 'item',
+    image = 'cigarette.png',
+    unique = false,
+    useable = true,
+    shouldClose = true,
+    combinable = nil,
+    description = 'A relaxing smoke.'
+}
