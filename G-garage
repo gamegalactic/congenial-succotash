@@ -1,0 +1,114 @@
+Config = {}
+
+Config.Garages = {
+    ["mirror_park"] = {
+        label = "Mirror Park Garage",
+        coords = vector3(1037.6, -766.9, 57.3),
+        heading = 90.0
+    },
+    ["vinewood"] = {
+        label = "Vinewood Garage",
+        coords = vector3(740.2, -1088.7, 22.2),
+        heading = 270.0
+    }
+}
+
+fx_version 'cerulean'
+game 'gta5'
+
+author 'YourName'
+description 'Standalone Garage System for QB-Core'
+version '2.0.0'
+
+shared_script '@qb-core/shared/locale.lua'
+client_script 'client.lua'
+server_script 'server.lua'
+file 'config.lua'
+
+lua54 'yes'
+
+local QBCore = exports['qb-core']:GetCoreObject()
+local garageData = {}
+
+RegisterNetEvent('garage:storeVehicle', function(vehicleProps)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local citizenId = Player.PlayerData.citizenid
+    garageData[citizenId] = garageData[citizenId] or {}
+
+    if #garageData[citizenId] >= 250 then
+        TriggerClientEvent('garage:notify', src, 'Garage is full.')
+        return
+    end
+
+    table.insert(garageData[citizenId], {
+        vehicle = vehicleProps,
+        plate = vehicleProps.plate
+    })
+
+    TriggerClientEvent('garage:notify', src, 'Vehicle stored successfully.')
+end)
+
+QBCore.Functions.CreateCallback('garage:getVehicles', function(source, cb)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return end
+
+    local citizenId = Player.PlayerData.citizenid
+    cb(garageData[citizenId] or {})
+end)
+
+local QBCore = exports['qb-core']:GetCoreObject()
+
+RegisterNetEvent('garage:notify', function(msg)
+    QBCore.Functions.Notify(msg, 'success')
+end)
+
+RegisterCommand('storecar', function()
+    local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+    if vehicle and GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+        local props = QBCore.Functions.GetVehicleProperties(vehicle)
+        TriggerServerEvent('garage:storeVehicle', props)
+        DeleteVehicle(vehicle)
+    else
+        QBCore.Functions.Notify('You must be in the driver seat of a vehicle.', 'error')
+    end
+end, false)
+
+RegisterCommand('openGarage', function()
+    QBCore.Functions.TriggerCallback('garage:getVehicles', function(vehicles)
+        TriggerEvent('garage:openMenu', vehicles)
+    end)
+end, false)
+
+RegisterNetEvent('garage:openMenu', function(vehicles)
+    local menu = {}
+    for _, v in pairs(vehicles) do
+        menu[#menu+1] = {
+            header = v.plate,
+            txt = "Spawn this vehicle",
+            params = {
+                event = "garage:spawnVehicle",
+                args = v
+            }
+        }
+    end
+    exports['qb-menu']:openMenu(menu)
+end)
+
+RegisterNetEvent('garage:spawnVehicle', function(vehicleData)
+    local coords = GetEntityCoords(PlayerPedId())
+    local heading = GetEntityHeading(PlayerPedId())
+
+    QBCore.Functions.SpawnVehicle(vehicleData.vehicle.model, function(vehicle)
+        SetVehicleNumberPlateText(vehicle, vehicleData.plate)
+        QBCore.Functions.SetVehicleProperties(vehicle, vehicleData.vehicle)
+        TaskStartScenarioInPlace(PlayerPedId(), "WORLD_HUMAN_CAR_PARK_ATTENDANT", 5000, true)
+        Wait(5000)
+        ClearPedTasks(PlayerPedId())
+        SetEntityCoords(vehicle, coords.x + 5.0, coords.y, coords.z, false, false, false, true)
+        SetEntityHeading(vehicle, heading)
+        TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
+    end, nil, true)
+end)
