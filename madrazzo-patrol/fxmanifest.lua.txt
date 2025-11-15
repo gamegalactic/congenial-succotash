@@ -1,0 +1,11 @@
+fx_version 'cerulean'
+game 'gta5'
+
+author 'Gamegalactic'
+description 'Madrazo Ranch Patrol System (Player + NPC)'
+version '1.0.0'
+
+client_scripts {
+    'config.lua',
+    'client.lua'
+}

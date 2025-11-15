@@ -1,0 +1,21 @@
+Config = {}
+
+-- Patrol zone center and radius
+Config.PatrolZone = {
+    center = vector3(1395.0, 1140.0, 114.0),
+    radius = 150.0
+}
+
+-- NPC patrol route
+Config.NPCPatrolRoute = {
+    vector3(1395.0, 1140.0, 114.0),
+    vector3(1405.0, 1125.0, 114.0),
+    vector3(1410.0, 1150.0, 114.0),
+    vector3(1390.0, 1160.0, 114.0)
+}
+
+-- NPC model
+Config.NPCModel = `s_m_m_security_01`
+
+-- Use ox_target integration (true/false)
+Config.UseOxTarget = false

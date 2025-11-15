@@ -1,0 +1,99 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+local isOnPatrol = false
+local patrolPed = nil
+
+-- Player patrol
+RegisterCommand("startmadrazopatrol", function()
+    if isOnPatrol then return QBCore.Functions.Notify("Already on patrol.", "error") end
+    isOnPatrol = true
+    QBCore.Functions.Notify("Madrazo Ranch patrol started.", "success")
+
+    CreateThread(function()
+        while isOnPatrol do
+            local dist = #(GetEntityCoords(PlayerPedId()) - Config.PatrolZone.center)
+            if dist > Config.PatrolZone.radius then
+                QBCore.Functions.Notify("You left the patrol zone!", "error")
+            end
+            Wait(5000)
+        end
+    end)
+end)
+
+RegisterCommand("stopmadrazopatrol", function()
+    if not isOnPatrol then return QBCore.Functions.Notify("Not on patrol.", "error") end
+    isOnPatrol = false
+    QBCore.Functions.Notify("Patrol ended.", "primary")
+end)
+
+RegisterKeyMapping("startmadrazopatrol", "Start Madrazo Patrol", "keyboard", "F6")
+RegisterKeyMapping("stopmadrazopatrol", "Stop Madrazo Patrol", "keyboard", "F7")
+
+-- NPC patrol
+function spawnPatrolNPC()
+    if DoesEntityExist(patrolPed) then return QBCore.Functions.Notify("Guard already active.", "error") end
+
+    RequestModel(Config.NPCModel)
+    while not HasModelLoaded(Config.NPCModel) do Wait(0) end
+
+    patrolPed = CreatePed(4, Config.NPCModel, Config.NPCPatrolRoute[1], 0.0, true, true)
+    SetEntityAsMissionEntity(patrolPed, true, true)
+    SetPedCanRagdoll(patrolPed, false)
+    SetPedDiesWhenInjured(patrolPed, false)
+    SetPedFleeAttributes(patrolPed, 0, 0)
+    SetPedCombatAttributes(patrolPed, 46, true)
+    TaskStartScenarioInPlace(patrolPed, "WORLD_HUMAN_GUARD_STAND", 0, true)
+
+    CreateThread(function()
+        while DoesEntityExist(patrolPed) do
+            for _, coords in ipairs(Config.NPCPatrolRoute) do
+                TaskGoStraightToCoord(patrolPed, coords.x, coords.y, coords.z, 1.0, -1, 0.0, 0.0)
+                Wait(10000)
+            end
+        end
+    end)
+end
+
+function removePatrolNPC()
+    if DoesEntityExist(patrolPed) then
+        DeleteEntity(patrolPed)
+        patrolPed = nil
+        QBCore.Functions.Notify("Guard removed.", "primary")
+    else
+        QBCore.Functions.Notify("No guard to remove.", "error")
+    end
+end
+
+RegisterCommand("spawnranchguard", spawnPatrolNPC)
+RegisterCommand("removeranchguard", removePatrolNPC)
+RegisterKeyMapping("spawnranchguard", "Spawn Ranch Guard", "keyboard", "F8")
+RegisterKeyMapping("removeranchguard", "Remove Ranch Guard", "keyboard", "F9")
+
+-- Optional ox_target integration
+if Config.UseOxTarget then
+    exports.ox_target:addBoxZone({
+        coords = Config.PatrolZone.center,
+        size = vec3(3, 3, 3),
+        rotation = 0,
+        debug = false,
+        options = {
+            {
+                name = 'start_patrol',
+                icon = 'fas fa-shield-alt',
+                label = 'Start Patrol',
+                onSelect = function() ExecuteCommand("startmadrazopatrol") end
+            },
+            {
+                name = 'spawn_guard',
+                icon = 'fas fa-user-shield',
+                label = 'Spawn Guard',
+                onSelect = function() ExecuteCommand("spawnranchguard") end
+            },
+            {
+                name = 'remove_guard',
+                icon = 'fas fa-user-slash',
+                label = 'Remove Guard',
+                onSelect = function() ExecuteCommand("removeranchguard") end
+            }
+        }
+    })
+end
