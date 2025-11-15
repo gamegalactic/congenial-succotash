@@ -1,0 +1,25 @@
+{
+  "assets": {
+    "perico_defences": {
+      "enabled": true,
+      "restartOnChange": true
+    }
+  },
+  "serverUpdateChannel": "recommended",
+  "systemResources": [
+    "basic-gamemode",
+    "map-skater",
+    "chat",
+    "playernames",
+    "mapmanager",
+    "spawnmanager",
+    "sessionmanager",
+    "baseevents",
+    "hardcap",
+    "webpack",
+    "yarn"
+  ],
+  "name": "perico_defences",
+  "createdAt": "2025-11-15T21:07:28.380Z",
+  "variables": {}
+}
